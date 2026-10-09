@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Tifa ❤️</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI','Poppins',sans-serif; }
+  body {
+    min-height:100vh;
+    background: linear-gradient(145deg,#fff0f5 0%,#ffe6f0 100%);
+    display:flex; justify-content:center; align-items:center;
+    padding:16px; transition:background .5s;
+  }
+  .game-container {
+    width:100%; max-width:700px;
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(12px);
+    border-radius:48px;
+    box-shadow: 0 25px 50px -8px rgba(180,100,140,.3), 0 0 0 2px rgba(255,215,225,.6);
+    padding:32px 28px;
+    border:1px solid #ffe2ed;
+  }
+  h1,h2,h3,p { text-align:center; color:#4b2e3b; }
+  .emoji-big { font-size:3.5rem; text-align:center; margin-bottom:8px; cursor:pointer; user-select:none; }
+  .question-text { font-size:1.7rem; font-weight:500; margin:16px 0 24px; color:#6b3a4b; }
+  .small-question { font-size:1.2rem; color:#8a5a6b; margin-bottom:20px; }
+  textarea, input[type="text"] {
+    width:100%; padding:18px 22px; border-radius:40px;
+    border:1.5px solid #ffc1d6; background:#fffafc;
+    font-size:1.1rem; outline:none; color:#3e2a33;
+    box-shadow: inset 0 2px 6px rgba(255,210,225,.4);
+  }
+  textarea:focus, input:focus { border-color:#ff92b0; background:#fff; }
+  .btn-group { display:flex; flex-wrap:wrap; justify-content:center; gap:14px; margin-top:18px; }
+  .btn {
+    background:#ffd9e6; border:none; padding:14px 36px;
+    border-radius:60px; font-size:1.15rem; font-weight:500;
+    color:#612f42; cursor:pointer; transition:all .2s;
+    box-shadow: 0 6px 0 #dbaec2, 0 8px 20px rgba(220,130,160,.3);
+  }
+  .btn:hover { background:#ffc1d6; transform:translateY(-2px); }
+  .btn:active { transform:translateY(4px); box-shadow:0 2px 0 #c98da8; }
+  .btn-secondary {
+    background:#f5e6ed; box-shadow:0 4px 0 #cfb1c2; color:#5c3b4a;
+    font-size:.95rem; padding:10px 26px;
+  }
+  .hidden { display:none !important; }
+  .poem-page {
+    position:relative; border-radius:40px; padding:12px;
+    background-size:cover; background-position:center;
+    min-height:420px; display:flex; flex-direction:column; justify-content:center;
+    margin:-10px 0;
+  }
+  .poem-overlay {
+    background: rgba(255,240,245,.85);
+    backdrop-filter: blur(6px);
+    border-radius:36px; padding:28px 18px;
+    margin:8px;
+  }
+  .poem-text {
+    font-size:1.05rem; line-height:1.9; white-space:pre-line;
+    font-style:italic; color:#4a2a38; text-align:center; padding:0 8px;
+  }
+  .horrah {
+    font-size:2.4rem; font-weight:700; color:#b3416b;
+    text-shadow:0 4px 12px rgba(255,150,180,.6);
+    margin-bottom:12px; letter-spacing:2px; text-align:center;
+  }
+  .loop-emoji { font-size:3rem; letter-spacing:6px; text-align:center; margin:10px 0; }
+  .love-btn { font-size:1.8rem; padding:10px 30px; }
+
+  /* ===== ADMIN PANEL ===== */
+  .admin-panel {
+    position:fixed; inset:0;
+    background: rgba(30,10,20,.92);
+    backdrop-filter: blur(10px);
+    z-index:9999;
+    display:flex; justify-content:center; align-items:center;
+    padding:20px;
+    overflow-y:auto;
+  }
+  .admin-box {
+    width:100%; max-width:640px;
+    background:#fff5f9;
+    border-radius:32px;
+    padding:28px 24px;
+    box-shadow:0 25px 60px rgba(0,0,0,.5);
+    border:2px solid #ffc1d6;
+    max-height:90vh; overflow-y:auto;
+  }
+  .admin-box h2 {
+    color:#b3416b; margin-bottom:18px; font-size:1.6rem;
+  }
+  .admin-section {
+    background:#fff; border-radius:20px;
+    padding:16px 18px; margin-bottom:14px;
+    border:1px solid #ffd9e6;
+    box-shadow:0 4px 10px rgba(220,130,160,.1);
+  }
+  .admin-label {
+    font-size:.85rem; color:#b3416b; font-weight:600;
+    text-transform:uppercase; letter-spacing:.5px;
+    margin-bottom:6px; text-align:left;
+  }
+  .admin-value {
+    font-size:1.05rem; color:#3e2a33; white-space:pre-wrap;
+    word-break:break-word; text-align:left;
+    font-style:italic;
+  }
+  .admin-value.empty { color:#bda2b2; font-style:normal; }
+  .admin-actions {
+    display:flex; gap:12px; justify-content:center;
+    margin-top:20px; flex-wrap:wrap;
+  }
+  .admin-btn {
+    padding:12px 28px; border:none; border-radius:50px;
+    font-size:1rem; cursor:pointer; font-weight:500;
+  }
+  .admin-btn.close { background:#ffd9e6; color:#612f42; }
+  .admin-btn.clear { background:#ffb3c6; color:#612f42; }
+  .admin-btn:hover { filter:brightness(.95); }
+</style>
+</head>
+<body>
+<div class="game-container" id="gameContainer">
+  <div id="screenContent"></div>
+</div>
+
+<!-- 🎵 YOUR SONGS — replace filenames with your MP3s -->
+<audio id="audio1" src="song1.mp3"></audio>
+<audio id="audio2" src="song2.mp3"></audio>
+<audio id="audio3" src="song3.mp3"></audio>
+
+<script>
+  // ===== MUSIC PLAYLIST =====
+  const songs = ['audio1','audio2','audio3'];
+  let currentSong = 0;
+  let musicStarted = false;
+
+  function playNextSong() {
+    const el = document.getElementById(songs[currentSong]);
+    el.play().catch(()=>{});
+    el.onended = () => {
+      currentSong = (currentSong + 1) % songs.length;
+      playNextSong();
+    };
+  }
+  function startMusic() {
+    if (musicStarted) return;
+    musicStarted = true;
+    currentSong = 0;
+    playNextSong();
+  }
+
+  // ===== STORAGE =====
+  function saveAnswer(key, value) {
+    try {
+      const data = JSON.parse(localStorage.getItem('tifa_answers') || '{}');
+      data[key] = value;
+      data.lastUpdated = new Date().toLocaleString();
+      localStorage.setItem('tifa_answers', JSON.stringify(data));
+    } catch(e) {}
+  }
+  function getAnswers() {
+    try {
+      return JSON.parse(localStorage.getItem('tifa_answers') || '{}');
+    } catch(e) { return {}; }
+  }
+
+  // ===== STATE =====
+  const screen = document.getElementById('screenContent');
+  const loopEmojis = ['💭','🌸','✨','🌙','⭐','🦋','🌷','☁️','💫','🌻','🍃','🕊️'];
+  let loopIndex = 0;
+
+  // ===== SCREENS =====
+  function showIntro() {
+    screen.innerHTML = `
+      <div class="emoji-big" id="secretTrigger">❤️</div>
+      <h1 style="font-size:2.4rem;font-weight:600;margin-bottom:8px;">hello tifa ❤️</h1>
+      <p class="question-text">are you ready to play this game?</p>
+      <div class="btn-group">
+        <button class="btn" id="yesBtn">Yes</button>
+        <button class="btn btn-secondary" id="noBtn">No</button>
+      </div>
+    `;
+
+    // === HIDDEN ADMIN TRIGGER: click ❤️ 5 times fast ===
+    let tapCount = 0;
+    let tapTimer = null;
+    document.getElementById('secretTrigger').addEventListener('click', () => {
+      tapCount++;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => { tapCount = 0; }, 1200);
+      if (tapCount >= 5) {
+        tapCount = 0;
+        showAdminPanel();
+      }
+    });
+
+    document.getElementById('yesBtn').onclick = () => {
+      startMusic();
+      showHappyQuestion();
+    };
+    document.getElementById('noBtn').onclick = () => {
+      document.body.innerHTML = '<p style="text-align:center;margin-top:40vh;font-size:2rem;color:#b3416b;">bye tifa ❤️</p>';
+    };
+  }
+
+  function showHappyQuestion() {
+    screen.innerHTML = `
+      <div class="emoji-big">😊✨</div>
+      <p class="question-text">what was your most happiest day in your life?</p>
+      <textarea id="happyInput" rows="3" placeholder="write here..."></textarea>
+      <div class="btn-group">
+        <button class="btn" id="next1">Next</button>
+      </div>
+    `;
+    const input = document.getElementById('happyInput');
+    const saved = getAnswers().happiest;
+    if (saved) input.value = saved;
+    document.getElementById('next1').onclick = () => {
+      saveAnswer('happiest', input.value.trim());
+      showSadQuestion();
+    };
+  }
+
+  function showSadQuestion() {
+    screen.innerHTML = `
+      <div class="emoji-big">🥺💧</div>
+      <p class="question-text">what was your saddest day in your life?</p>
+      <textarea id="sadInput" rows="3" placeholder="it's ok... write it here"></textarea>
+      <div class="btn-group">
+        <button class="btn" id="next2">Next</button>
+      </div>
+    `;
+    const input = document.getElementById('sadInput');
+    const saved = getAnswers().saddest;
+    if (saved) input.value = saved;
+    document.getElementById('next2').onclick = () => {
+      saveAnswer('saddest', input.value.trim());
+      showHateQuestion();
+    };
+  }
+
+  function showHateQuestion() {
+    screen.innerHTML = `
+      <div class="emoji-big">😤💢</div>
+      <p class="question-text">what thing or behaviour do you hate the most?</p>
+      <textarea id="hateInput" rows="3" placeholder="tell me..."></textarea>
+      <div class="btn-group">
+        <button class="btn" id="next3">Next</button>
+      </div>
+    `;
+    const input = document.getElementById('hateInput');
+    const saved = getAnswers().hates;
+    if (saved) input.value = saved;
+    document.getElementById('next3').onclick = () => {
+      saveAnswer('hates', input.value.trim());
+      showCrushQuestion();
+    };
+  }
+
+  function showCrushQuestion() {
+    screen.innerHTML = `
+      <div class="emoji-big">🤫💗</div>
+      <p class="question-text">now the game begins 😂</p>
+      <p class="small-question">name your crush or your boyfriend — it's a secret 🤐</p>
+      <input type="text" id="crushInput" placeholder="type a name...">
+      <div class="btn-group">
+        <button class="btn btn-secondary" id="noCrushBtn">i don't have one</button>
+      </div>
+      <div class="btn-group hidden" id="nextGroup">
+        <button class="btn" id="next4">Next</button>
+      </div>
+    `;
+    const crushInput = document.getElementById('crushInput');
+    const nextGroup = document.getElementById('nextGroup');
+    const saved = getAnswers().crush;
+    if (saved) { crushInput.value = saved; nextGroup.classList.remove('hidden'); }
+
+    crushInput.addEventListener('input', () => {
+      if (crushInput.value.trim().length > 0) nextGroup.classList.remove('hidden');
+      else nextGroup.classList.add('hidden');
+    });
+    document.getElementById('next4').onclick = () => {
+      saveAnswer('crush', crushInput.value.trim());
+      showPoem();
+    };
+    document.getElementById('noCrushBtn').onclick = showLoopScreen;
+  }
+
+  function showLoopScreen() {
+    loopIndex = (loopIndex + 1) % loopEmojis.length;
+    const emoji = loopEmojis[loopIndex];
+    const prompts = [
+      'come on... just one name?',
+      'really? no one at all?',
+      'think harder... someone?',
+      'ok but there has to be someone 👀',
+      'just tell me... i won\'t tell anyone',
+      'pretty please? 🌸',
+      'not even a tiny crush?',
+      'hmm... try again?',
+      'someone makes your heart go 💓',
+      'ok last hint... just a name?'
+    ];
+    const msg = prompts[loopIndex % prompts.length];
+
+    screen.innerHTML = `
+      <div class="loop-emoji">${emoji}</div>
+      <p class="question-text">${msg}</p>
+      <input type="text" id="crushInput" placeholder="type a name...">
+      <div class="btn-group">
+        <button class="btn btn-secondary" id="noCrushBtn">i don't have one</button>
+      </div>
+      <div class="btn-group hidden" id="nextGroup">
+        <button class="btn" id="next4">Next</button>
+      </div>
+    `;
+    const crushInput = document.getElementById('crushInput');
+    const nextGroup = document.getElementById('nextGroup');
+    crushInput.addEventListener('input', () => {
+      if (crushInput.value.trim().length > 0) nextGroup.classList.remove('hidden');
+      else nextGroup.classList.add('hidden');
+    });
+    document.getElementById('next4').onclick = () => {
+      saveAnswer('crush', crushInput.value.trim());
+      showPoem();
+    };
+    document.getElementById('noCrushBtn').onclick = showLoopScreen;
+  }
+
+  function showPoem() {
+    screen.innerHTML = `
+      <div class="poem-page" style="background-image:url('tifa.jpg');">
+        <div class="poem-overlay">
+          <div class="horrah">horrahh $€!</div>
+          <div class="poem-text">
+Your smile arrives like morning light,
+And turns my darkest grey to bright.
+The way you laugh, the way you care,
+A gentleness beyond compare.
+
+Your eyes hold stories, soft and true,
+A quiet sky of gentle blue.
+The world feels kinder when you're near,
+A melody I long to hear.
+
+You walk with grace in simple things,
+The joy a quiet moment brings.
+Your voice, a calm and steady stream,
+Awakens every hopeful dream.
+
+The little kindness that you show,
+Makes ordinary moments glow.
+You lift the heavy from the day,
+And chase the shadowed thoughts away.
+
+Your heart, a garden, warm and wide,
+Where everyone can come and hide.
+You give your time, you give your light,
+And make the darkest hours bright.
+
+You are the calm within the storm,
+The gentle place that keeps me warm.
+A friend so rare, so real, so true,
+The world is softer thanks to you.
+
+Your strength is quiet, not loud or bold,
+A steady hand for me to hold.
+You rise, you shine, you simply be,
+And that is beautiful to me.
+
+The stars would envy how you glow,
+The way your inner kindness flow.
+A soul so genuine and free,
+A better friend I'll never see.
+
+So here's a poem, soft and small,
+For you who stands above it all.
+Not love, but something just as true,
+A friendship deep, and bright, and new.
+
+So if you ever doubt your worth,
+Remember you're the light of Earth.
+And know, whatever life may bring,
+You're treasured more than anything.
+          </div>
+        </div>
+      </div>
+      <div class="btn-group" style="margin-top:20px;">
+        <button class="btn love-btn" id="loveBtn">❤️</button>
+      </div>
+    `;
+    document.getElementById('loveBtn').onclick = () => {
+      document.body.style.transition = 'opacity .8s';
+      document.body.style.opacity = '0';
+      setTimeout(() => {
+        document.body.innerHTML = '<p style="text-align:center;margin-top:40vh;font-size:2rem;color:#b3416b;">❤️</p>';
+        document.body.style.opacity = '1';
+      }, 800);
+    };
+  }
+
+  // ===== ADMIN PANEL =====
+  function showAdminPanel() {
+    const a = getAnswers();
+    const v = (val) => val && val.length ? val : '<span class="empty">— not answered yet —</span>';
+
+    const panel = document.createElement('div');
+    panel.className = 'admin-panel';
+    panel.innerHTML = `
+      <div class="admin-box">
+        <h2>🔒 Admin — Tifa's Answers</h2>
+
+        <div class="admin-section">
+          <div class="admin-label">😊 Happiest day</div>
+          <div class="admin-value">${v(a.happiest)}</div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-label">🥺 Saddest day</div>
+          <div class="admin-value">${v(a.saddest)}</div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-label">😤 Hates the most</div>
+          <div class="admin-value">${v(a.hates)}</div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-label">💗 Crush / Boyfriend</div>
+          <div class="admin-value">${v(a.crush)}</div>
+        </div>
+
+        ${a.lastUpdated ? `<p class="tiny-note" style="text-align:center;color:#bda2b2;font-size:.8rem;margin-top:10px;">Last updated: ${a.lastUpdated}</p>` : ''}
+
+        <div class="admin-actions">
+          <button class="admin-btn close" id="adminClose">Close</button>
+          <button class="admin-btn clear" id="adminClear">Clear all</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(panel);
+
+    document.getElementById('adminClose').onclick = () => panel.remove();
+    document.getElementById('adminClear').onclick = () => {
+      if (confirm('Clear all saved answers?')) {
+        localStorage.removeItem('tifa_answers');
+        panel.remove();
+      }
+    };
+    panel.addEventListener('click', (e) => {
+      if (e.target === panel) panel.remove();
+    });
+  }
+
+  showIntro();
+</script>
+</body>
+</html>
