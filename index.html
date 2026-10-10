@@ -10,11 +10,11 @@
     min-height:100vh;
     background: linear-gradient(145deg,#fff0f5 0%,#ffe6f0 100%);
     display:flex; justify-content:center; align-items:center;
-    padding:16px; transition:background .5s;
+    padding:16px;
   }
   .game-container {
     width:100%; max-width:700px;
-    background: rgba(255,255,255,.88);
+    background: rgba(255,255,255,.9);
     backdrop-filter: blur(12px);
     border-radius:48px;
     box-shadow: 0 25px 50px -8px rgba(180,100,140,.3), 0 0 0 2px rgba(255,215,225,.6);
@@ -46,29 +46,50 @@
     font-size:.95rem; padding:10px 26px;
   }
   .hidden { display:none !important; }
-  .poem-page {
-    position:relative; border-radius:40px; padding:12px;
-    background-size:cover; background-position:center;
-    min-height:420px; display:flex; flex-direction:column; justify-content:center;
-    margin:-10px 0;
-  }
-  .poem-overlay {
-    background: rgba(255,240,245,.85);
-    backdrop-filter: blur(6px);
-    border-radius:36px; padding:28px 18px;
-    margin:8px;
-  }
-  .poem-text {
-    font-size:1.05rem; line-height:1.9; white-space:pre-line;
-    font-style:italic; color:#4a2a38; text-align:center; padding:0 8px;
-  }
-  .horrah {
-    font-size:2.4rem; font-weight:700; color:#b3416b;
-    text-shadow:0 4px 12px rgba(255,150,180,.6);
-    margin-bottom:12px; letter-spacing:2px; text-align:center;
-  }
   .loop-emoji { font-size:3rem; letter-spacing:6px; text-align:center; margin:10px 0; }
   .love-btn { font-size:1.8rem; padding:10px 30px; }
+
+  /* ===== POEM PAGE — fullscreen photo, faded poem ===== */
+  .poem-fullscreen {
+    position:fixed; inset:0;
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    display:flex; justify-content:center; align-items:center;
+    padding:24px;
+    z-index:100;
+    overflow-y:auto;
+  }
+  .poem-card {
+    width:100%; max-width:720px;
+    background: rgba(255,255,255,.35);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius:32px;
+    padding:32px 26px;
+    border:1px solid rgba(255,255,255,.5);
+    box-shadow:0 20px 60px rgba(80,20,50,.35);
+    margin:auto;
+  }
+  .horrah {
+    font-size:2.2rem; font-weight:800;
+    color:#fff;
+    text-shadow:0 4px 16px rgba(180,60,110,.95), 0 0 24px rgba(255,150,200,.6);
+    letter-spacing:2px; text-align:center;
+    margin-bottom:16px;
+  }
+  .poem-text {
+    font-size:1.05rem; line-height:1.95; white-space:pre-line;
+    font-style:italic;
+    color:#fff;
+    text-align:center;
+    padding:0 6px;
+    text-shadow:0 2px 8px rgba(0,0,0,.85), 0 0 12px rgba(0,0,0,.6);
+    font-weight:500;
+  }
+  .poem-actions {
+    text-align:center; margin-top:24px;
+  }
 
   /* ===== ADMIN PANEL ===== */
   .admin-panel {
@@ -77,11 +98,10 @@
     backdrop-filter: blur(10px);
     z-index:9999;
     display:flex; justify-content:center; align-items:center;
-    padding:20px;
-    overflow-y:auto;
+    padding:20px; overflow-y:auto;
   }
   .admin-box {
-    width:100%; max-width:640px;
+    width:100%; max-width:680px;
     background:#fff5f9;
     border-radius:32px;
     padding:28px 24px;
@@ -89,9 +109,7 @@
     border:2px solid #ffc1d6;
     max-height:90vh; overflow-y:auto;
   }
-  .admin-box h2 {
-    color:#b3416b; margin-bottom:18px; font-size:1.6rem;
-  }
+  .admin-box h2 { color:#b3416b; margin-bottom:18px; font-size:1.6rem; }
   .admin-section {
     background:#fff; border-radius:20px;
     padding:16px 18px; margin-bottom:14px;
@@ -105,8 +123,7 @@
   }
   .admin-value {
     font-size:1.05rem; color:#3e2a33; white-space:pre-wrap;
-    word-break:break-word; text-align:left;
-    font-style:italic;
+    word-break:break-word; text-align:left; font-style:italic;
   }
   .admin-value.empty { color:#bda2b2; font-style:normal; }
   .admin-actions {
@@ -118,8 +135,12 @@
     font-size:1rem; cursor:pointer; font-weight:500;
   }
   .admin-btn.close { background:#ffd9e6; color:#612f42; }
-  .admin-btn.clear { background:#ffb3c6; color:#612f42; }
+  .admin-btn.refresh { background:#c8f0d8; color:#1e5a35; }
   .admin-btn:hover { filter:brightness(.95); }
+  .admin-status {
+    font-size:.85rem; color:#b3416b; text-align:center;
+    margin-bottom:12px; min-height:1.2em;
+  }
 </style>
 </head>
 <body>
@@ -127,17 +148,73 @@
   <div id="screenContent"></div>
 </div>
 
-<!-- 🎵 YOUR SONGS — replace filenames with your MP3s -->
+<!-- 🎵 YOUR SONGS -->
 <audio id="audio1" src="song1.mp3"></audio>
 <audio id="audio2" src="song2.mp3"></audio>
 <audio id="audio3" src="song3.mp3"></audio>
 
+<!-- Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ===== MUSIC PLAYLIST =====
-  const songs = ['audio1','audio2','audio3'];
-  let currentSong = 0;
-  let musicStarted = false;
+  // =============================================
+  // ⚙️  PASTE YOUR SUPABASE INFO HERE
+  // =============================================
+  const SUPABASE_URL = 'https://ghcxcqdhjkaujykqzrwx.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_aCDCcbKUaY28JCOnjxfRMw_DDaFw7ZD';
 
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Unique session id per visitor (so you know which submission is hers)
+  let SESSION_ID = localStorage.getItem('tifa_session_id');
+  if (!SESSION_ID) {
+    SESSION_ID = 'tifa_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('tifa_session_id', SESSION_ID);
+  }
+
+  // ===== SAVE ANSWER TO SUPABASE =====
+  async function saveAnswer(key, value) {
+    // Also keep a local copy for instant admin view
+    try {
+      const local = JSON.parse(localStorage.getItem('tifa_local') || '{}');
+      local[key] = value;
+      local.updated = new Date().toLocaleString();
+      localStorage.setItem('tifa_local', JSON.stringify(local));
+    } catch(e) {}
+
+    // Upsert to Supabase (one row per session)
+    const { data: existing } = await supabase
+      .from('tifa_answers')
+      .select('id')
+      .eq('session_id', SESSION_ID)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase.from('tifa_answers')
+        .update({ [key]: value })
+        .eq('session_id', SESSION_ID);
+    } else {
+      await supabase.from('tifa_answers')
+        .insert({ session_id: SESSION_ID, [key]: value });
+    }
+  }
+
+  // ===== LOAD ANSWERS (for admin) =====
+  async function loadAnswers() {
+    const { data, error } = await supabase
+      .from('tifa_answers')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) {
+      console.error(error);
+      return { error: error.message, rows: [] };
+    }
+    return { rows: data || [] };
+  }
+
+  // ===== MUSIC =====
+  const songs = ['audio1','audio2','audio3'];
+  let currentSong = 0, musicStarted = false;
   function playNextSong() {
     const el = document.getElementById(songs[currentSong]);
     el.play().catch(()=>{});
@@ -151,21 +228,6 @@
     musicStarted = true;
     currentSong = 0;
     playNextSong();
-  }
-
-  // ===== STORAGE =====
-  function saveAnswer(key, value) {
-    try {
-      const data = JSON.parse(localStorage.getItem('tifa_answers') || '{}');
-      data[key] = value;
-      data.lastUpdated = new Date().toLocaleString();
-      localStorage.setItem('tifa_answers', JSON.stringify(data));
-    } catch(e) {}
-  }
-  function getAnswers() {
-    try {
-      return JSON.parse(localStorage.getItem('tifa_answers') || '{}');
-    } catch(e) { return {}; }
   }
 
   // ===== STATE =====
@@ -185,23 +247,16 @@
       </div>
     `;
 
-    // === HIDDEN ADMIN TRIGGER: click ❤️ 5 times fast ===
-    let tapCount = 0;
-    let tapTimer = null;
+    // hidden admin trigger: 5 quick taps on ❤️
+    let tapCount = 0, tapTimer = null;
     document.getElementById('secretTrigger').addEventListener('click', () => {
       tapCount++;
       clearTimeout(tapTimer);
-      tapTimer = setTimeout(() => { tapCount = 0; }, 1200);
-      if (tapCount >= 5) {
-        tapCount = 0;
-        showAdminPanel();
-      }
+      tapTimer = setTimeout(() => tapCount = 0, 1200);
+      if (tapCount >= 5) { tapCount = 0; showAdminPanel(); }
     });
 
-    document.getElementById('yesBtn').onclick = () => {
-      startMusic();
-      showHappyQuestion();
-    };
+    document.getElementById('yesBtn').onclick = () => { startMusic(); showHappyQuestion(); };
     document.getElementById('noBtn').onclick = () => {
       document.body.innerHTML = '<p style="text-align:center;margin-top:40vh;font-size:2rem;color:#b3416b;">bye tifa ❤️</p>';
     };
@@ -212,15 +267,13 @@
       <div class="emoji-big">😊✨</div>
       <p class="question-text">what was your most happiest day in your life?</p>
       <textarea id="happyInput" rows="3" placeholder="write here..."></textarea>
-      <div class="btn-group">
-        <button class="btn" id="next1">Next</button>
-      </div>
+      <div class="btn-group"><button class="btn" id="next1">Next</button></div>
     `;
     const input = document.getElementById('happyInput');
-    const saved = getAnswers().happiest;
-    if (saved) input.value = saved;
-    document.getElementById('next1').onclick = () => {
-      saveAnswer('happiest', input.value.trim());
+    const saved = JSON.parse(localStorage.getItem('tifa_local') || '{}');
+    if (saved.happiest) input.value = saved.happiest;
+    document.getElementById('next1').onclick = async () => {
+      await saveAnswer('happiest', input.value.trim());
       showSadQuestion();
     };
   }
@@ -230,15 +283,13 @@
       <div class="emoji-big">🥺💧</div>
       <p class="question-text">what was your saddest day in your life?</p>
       <textarea id="sadInput" rows="3" placeholder="it's ok... write it here"></textarea>
-      <div class="btn-group">
-        <button class="btn" id="next2">Next</button>
-      </div>
+      <div class="btn-group"><button class="btn" id="next2">Next</button></div>
     `;
     const input = document.getElementById('sadInput');
-    const saved = getAnswers().saddest;
-    if (saved) input.value = saved;
-    document.getElementById('next2').onclick = () => {
-      saveAnswer('saddest', input.value.trim());
+    const saved = JSON.parse(localStorage.getItem('tifa_local') || '{}');
+    if (saved.saddest) input.value = saved.saddest;
+    document.getElementById('next2').onclick = async () => {
+      await saveAnswer('saddest', input.value.trim());
       showHateQuestion();
     };
   }
@@ -248,15 +299,13 @@
       <div class="emoji-big">😤💢</div>
       <p class="question-text">what thing or behaviour do you hate the most?</p>
       <textarea id="hateInput" rows="3" placeholder="tell me..."></textarea>
-      <div class="btn-group">
-        <button class="btn" id="next3">Next</button>
-      </div>
+      <div class="btn-group"><button class="btn" id="next3">Next</button></div>
     `;
     const input = document.getElementById('hateInput');
-    const saved = getAnswers().hates;
-    if (saved) input.value = saved;
-    document.getElementById('next3').onclick = () => {
-      saveAnswer('hates', input.value.trim());
+    const saved = JSON.parse(localStorage.getItem('tifa_local') || '{}');
+    if (saved.hates) input.value = saved.hates;
+    document.getElementById('next3').onclick = async () => {
+      await saveAnswer('hates', input.value.trim());
       showCrushQuestion();
     };
   }
@@ -276,15 +325,11 @@
     `;
     const crushInput = document.getElementById('crushInput');
     const nextGroup = document.getElementById('nextGroup');
-    const saved = getAnswers().crush;
-    if (saved) { crushInput.value = saved; nextGroup.classList.remove('hidden'); }
-
     crushInput.addEventListener('input', () => {
-      if (crushInput.value.trim().length > 0) nextGroup.classList.remove('hidden');
-      else nextGroup.classList.add('hidden');
+      nextGroup.classList.toggle('hidden', crushInput.value.trim().length === 0);
     });
-    document.getElementById('next4').onclick = () => {
-      saveAnswer('crush', crushInput.value.trim());
+    document.getElementById('next4').onclick = async () => {
+      await saveAnswer('crush', crushInput.value.trim());
       showPoem();
     };
     document.getElementById('noCrushBtn').onclick = showLoopScreen;
@@ -292,7 +337,6 @@
 
   function showLoopScreen() {
     loopIndex = (loopIndex + 1) % loopEmojis.length;
-    const emoji = loopEmojis[loopIndex];
     const prompts = [
       'come on... just one name?',
       'really? no one at all?',
@@ -305,11 +349,9 @@
       'someone makes your heart go 💓',
       'ok last hint... just a name?'
     ];
-    const msg = prompts[loopIndex % prompts.length];
-
     screen.innerHTML = `
-      <div class="loop-emoji">${emoji}</div>
-      <p class="question-text">${msg}</p>
+      <div class="loop-emoji">${loopEmojis[loopIndex]}</div>
+      <p class="question-text">${prompts[loopIndex % prompts.length]}</p>
       <input type="text" id="crushInput" placeholder="type a name...">
       <div class="btn-group">
         <button class="btn btn-secondary" id="noCrushBtn">i don't have one</button>
@@ -321,78 +363,69 @@
     const crushInput = document.getElementById('crushInput');
     const nextGroup = document.getElementById('nextGroup');
     crushInput.addEventListener('input', () => {
-      if (crushInput.value.trim().length > 0) nextGroup.classList.remove('hidden');
-      else nextGroup.classList.add('hidden');
+      nextGroup.classList.toggle('hidden', crushInput.value.trim().length === 0);
     });
-    document.getElementById('next4').onclick = () => {
-      saveAnswer('crush', crushInput.value.trim());
+    document.getElementById('next4').onclick = async () => {
+      await saveAnswer('crush', crushInput.value.trim());
       showPoem();
     };
     document.getElementById('noCrushBtn').onclick = showLoopScreen;
   }
 
   function showPoem() {
-    screen.innerHTML = `
-      <div class="poem-page" style="background-image:url('tifa.jpg');">
-        <div class="poem-overlay">
-          <div class="horrah">horrahh $€!</div>
-          <div class="poem-text">
-Your smile arrives like morning light,
-And turns my darkest grey to bright.
-The way you laugh, the way you care,
-A gentleness beyond compare.
+    const page = document.createElement('div');
+    page.className = 'poem-fullscreen';
+    page.style.backgroundImage = "url('tifa.jpg')";
+    page.innerHTML = `
+      <div class="poem-card">
+        <div class="horrah">horrahh $€!</div>
+        <div class="poem-text">
+hey tifa, best friend of mine,
+let me roast you, just this time.
+no hard feelings, no offence,
+just some jokes at your expense.
 
-Your eyes hold stories, soft and true,
-A quiet sky of gentle blue.
-The world feels kinder when you're near,
-A melody I long to hear.
+you say you're dieting, you swear,
+but that big belly's always there.
+it giggles when you walk around,
+the roundest tummy in the town.
 
-You walk with grace in simple things,
-The joy a quiet moment brings.
-Your voice, a calm and steady stream,
-Awakens every hopeful dream.
+at midnight when the world's asleep,
+your phone is buzzing, secrets deep.
+"just talking to a friend," you say,
+but those boy chats last till break of day.
 
-The little kindness that you show,
-Makes ordinary moments glow.
-You lift the heavy from the day,
-And chase the shadowed thoughts away.
+you tell me lies with such a face,
+so innocent, so full of grace.
+"i didn't see your text," you claim,
+but whatsapp shows you read the same.
 
-Your heart, a garden, warm and wide,
-Where everyone can come and hide.
-You give your time, you give your light,
-And make the darkest hours bright.
+blue ticks, blue ticks, oh what a crime,
+you leave me hanging every time.
+i wait, i stare, i lose my mind,
+you reply three days later — how kind.
 
-You are the calm within the storm,
-The gentle place that keeps me warm.
-A friend so rare, so real, so true,
-The world is softer thanks to you.
+you say "i'll call you back" — you won't,
+you say "i forgot" — no you don't.
+your memory's sharp for gossip news,
+but my texts? always left on "view".
 
-Your strength is quiet, not loud or bold,
-A steady hand for me to hold.
-You rise, you shine, you simply be,
-And that is beautiful to me.
+still, tifa, you're my closest friend,
+a chaotic gem until the end.
+fat belly, lies, and midnight chats,
+i'd still choose you — imagine that.
 
-The stars would envy how you glow,
-The way your inner kindness flow.
-A soul so genuine and free,
-A better friend I'll never see.
-
-So here's a poem, soft and small,
-For you who stands above it all.
-Not love, but something just as true,
-A friendship deep, and bright, and new.
-
-So if you ever doubt your worth,
-Remember you're the light of Earth.
-And know, whatever life may bring,
-You're treasured more than anything.
-          </div>
+so here's my roast, all wrapped in love,
+a gift from me, sent from above.
+you're messy, loud, and slightly mad,
+but honestly — the best i've had.
+        </div>
+        <div class="poem-actions">
+          <button class="btn love-btn" id="loveBtn">❤️</button>
         </div>
       </div>
-      <div class="btn-group" style="margin-top:20px;">
-        <button class="btn love-btn" id="loveBtn">❤️</button>
-      </div>
     `;
+    document.body.appendChild(page);
     document.getElementById('loveBtn').onclick = () => {
       document.body.style.transition = 'opacity .8s';
       document.body.style.opacity = '0';
@@ -404,56 +437,58 @@ You're treasured more than anything.
   }
 
   // ===== ADMIN PANEL =====
-  function showAdminPanel() {
-    const a = getAnswers();
-    const v = (val) => val && val.length ? val : '<span class="empty">— not answered yet —</span>';
-
+  async function showAdminPanel() {
     const panel = document.createElement('div');
     panel.className = 'admin-panel';
     panel.innerHTML = `
       <div class="admin-box">
         <h2>🔒 Admin — Tifa's Answers</h2>
-
-        <div class="admin-section">
-          <div class="admin-label">😊 Happiest day</div>
-          <div class="admin-value">${v(a.happiest)}</div>
-        </div>
-
-        <div class="admin-section">
-          <div class="admin-label">🥺 Saddest day</div>
-          <div class="admin-value">${v(a.saddest)}</div>
-        </div>
-
-        <div class="admin-section">
-          <div class="admin-label">😤 Hates the most</div>
-          <div class="admin-value">${v(a.hates)}</div>
-        </div>
-
-        <div class="admin-section">
-          <div class="admin-label">💗 Crush / Boyfriend</div>
-          <div class="admin-value">${v(a.crush)}</div>
-        </div>
-
-        ${a.lastUpdated ? `<p class="tiny-note" style="text-align:center;color:#bda2b2;font-size:.8rem;margin-top:10px;">Last updated: ${a.lastUpdated}</p>` : ''}
-
+        <div class="admin-status" id="adminStatus">loading from supabase...</div>
+        <div id="adminRows"></div>
         <div class="admin-actions">
+          <button class="admin-btn refresh" id="adminRefresh">🔄 Refresh</button>
           <button class="admin-btn close" id="adminClose">Close</button>
-          <button class="admin-btn clear" id="adminClear">Clear all</button>
         </div>
       </div>
     `;
     document.body.appendChild(panel);
-
     document.getElementById('adminClose').onclick = () => panel.remove();
-    document.getElementById('adminClear').onclick = () => {
-      if (confirm('Clear all saved answers?')) {
-        localStorage.removeItem('tifa_answers');
-        panel.remove();
+    document.getElementById('adminRefresh').onclick = () => renderRows();
+    panel.addEventListener('click', (e) => { if (e.target === panel) panel.remove(); });
+
+    async function renderRows() {
+      const status = document.getElementById('adminStatus');
+      const rowsBox = document.getElementById('adminRows');
+      status.textContent = 'loading from supabase...';
+      const { rows, error } = await loadAnswers();
+      if (error) {
+        status.innerHTML = '❌ error: ' + error;
+        rowsBox.innerHTML = '';
+        return;
       }
-    };
-    panel.addEventListener('click', (e) => {
-      if (e.target === panel) panel.remove();
-    });
+      if (!rows.length) {
+        status.textContent = 'no answers yet';
+        rowsBox.innerHTML = '';
+        return;
+      }
+      status.textContent = rows.length + ' submission(s) found';
+      rowsBox.innerHTML = rows.map((r, i) => `
+        <div class="admin-section">
+          <div class="admin-label">#${i+1} · session ${r.session_id || '—'}</div>
+          <div class="admin-label" style="margin-top:10px;">😊 happiest day</div>
+          <div class="admin-value">${r.happiest || '<span class="empty">—</span>'}</div>
+          <div class="admin-label" style="margin-top:10px;">🥺 saddest day</div>
+          <div class="admin-value">${r.saddest || '<span class="empty">—</span>'}</div>
+          <div class="admin-label" style="margin-top:10px;">😤 hates the most</div>
+          <div class="admin-value">${r.hates || '<span class="empty">—</span>'}</div>
+          <div class="admin-label" style="margin-top:10px;">💗 crush / boyfriend</div>
+          <div class="admin-value">${r.crush || '<span class="empty">—</span>'}</div>
+          <div class="admin-label" style="margin-top:10px;">🕒 submitted</div>
+          <div class="admin-value">${r.created_at ? new Date(r.created_at).toLocaleString() : '—'}</div>
+        </div>
+      `).join('');
+    }
+    renderRows();
   }
 
   showIntro();
